@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: ioomex-admin-springboot
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://xxx:xxx/ioomex?autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
+    username: xx
+    password: xxx
+server:
+  port: 9081

@@ -1,14 +1,16 @@
 spring:
   application:
     name: ioomex-admin-springboot
-
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://xx:xx/xx?autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
-    username: xx
-    password: xx
+    url: jdbc:mysql://43.136.17.229:3306/ioomex?autoReconnect=true&useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
+    username: root
+    password: 9978@wzb
   session:
-    timeout: 86400 
+    timeout: 86400
 server:
   port: 9081
   servlet:

@@ -54,6 +54,9 @@ public class UserController {
         if (ObjectUtils.isEmpty(userLoginRequest)) {
             return null;
         }
+//        if(true){
+//            return new User();
+//        }
         String username = userLoginRequest.getUsername();
         String password = userLoginRequest.getPassword();
         if (StringUtils.isAnyEmpty(username, password)) {

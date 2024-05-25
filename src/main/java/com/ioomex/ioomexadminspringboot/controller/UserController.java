@@ -15,10 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -47,6 +44,19 @@ public class UserController {
         }
         return userService.userRegister(userRegisterRequest.getUsername(), userRegisterRequest.getPassword(),
           userRegisterRequest.getCheckPassword());
+    }
+
+
+    @GetMapping("/current")
+    public User current(HttpServletRequest request) {
+        Object userObject = request.getSession().getAttribute(UserModeConstant.USER_LOGIN_STATUS);
+        User user = (User) userObject;
+        if (user == null) {
+            return null;
+        }
+        long userId = user.getId();
+        User user1 = this.userMapper.selectById(userId);
+        return UserServiceImpl.getSafeUser(user1);
     }
 
     @PostMapping("/login")
@@ -125,4 +135,18 @@ public class UserController {
         }
         return false;
     }
+
+
+    /**
+     * 用户注销
+     *
+     * @param request
+     * @return
+     */
+    @PostMapping("/logout")
+    public int userLogout(HttpServletRequest request) {
+        int result = userService.userLogout(request);
+        return result;
+    }
+
 }

@@ -176,6 +176,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return DigestUtils.md5DigestAsHex((UserEncryptConstant.SALT + password).getBytes(StandardCharsets.UTF_8));
     }
 
+
+
+    @Override
+    public int userLogout(HttpServletRequest request) {
+        // 移除登录态
+        request.getSession().removeAttribute(UserModeConstant.USER_LOGIN_STATUS);
+        return 1;
+    }
+
+
 }
 
 

@@ -6,8 +6,10 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.http.server.HttpServerRequest;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ioomex.ioomexadminspringboot.common.ErrorCode;
 import com.ioomex.ioomexadminspringboot.constant.UserEncryptConstant;
 import com.ioomex.ioomexadminspringboot.constant.UserModeConstant;
+import com.ioomex.ioomexadminspringboot.exception.BusinessException;
 import com.ioomex.ioomexadminspringboot.mapper.UserMapper;
 import com.ioomex.ioomexadminspringboot.module.User;
 import com.ioomex.ioomexadminspringboot.service.UserService;
@@ -44,7 +46,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public long userRegister(String username, String password, String checkPassword) {
         Integer x = registerValidate(username, password, checkPassword);
-        if (x != null && x!=0) return x;
+        if (x != null && x != 0) return x;
 
         String encryptPassword = passwordEncrypt(password);
         User user = new User();
@@ -87,11 +89,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return null;
         }
 
-        String passwordEncrypt =
-          DigestUtils.md5DigestAsHex((UserEncryptConstant.SALT + password).getBytes(StandardCharsets.UTF_8));
+        String passwordEncrypt = DigestUtils.md5DigestAsHex((UserEncryptConstant.SALT + password).getBytes(StandardCharsets.UTF_8));
         // 根据加密的密码去数据库查询
-        User user = this.getOne(new QueryWrapper<User>().lambda().eq(User::getUseraccount, username).eq(User::getUserpassword,
-          passwordEncrypt));
+        User user = this.getOne(new QueryWrapper<User>().lambda().eq(User::getUseraccount, username).eq(User::getUserpassword, passwordEncrypt));
         if (ObjectUtils.isEmpty(user)) {
             log.info("user login failed,userAccount cannot match userPassWord {}", user);
             return null;
@@ -118,6 +118,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         safeUser.setEmail(user.getEmail());
         safeUser.setCreatetime(user.getCreatetime());
         safeUser.setUpdatetime(user.getUpdatetime());
+        safeUser.setUserstatus(user.getUserstatus());
         return safeUser;
     }
 
@@ -133,35 +134,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private Integer registerValidate(String username, String password, String checkPassword) {
         // 校验参数
         if (StringUtils.isAnyEmpty(username, password, checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "请求参数");
         }
 
         // 校验用户名
         if (username.length() < 4) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "账户小于四位");
         }
 
         // 校验密码
         if (password.length() < 8 || checkPassword.length() > 16) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "密码小于八位或大于16位");
         }
 
         // 校验密码是否包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(username);
         if (matcher.find()) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "密码包含特殊字符");
         }
 
         // 判断密码和验证码是否相同
         if (!ObjUtil.equals(password, checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "密码不相同");
         }
 
         // 校验用户名是否重复
         User one = this.getOne(new QueryWrapper<User>().lambda().eq(User::getUsername, username));
         if (!ObjectUtils.isEmpty(one)) {
-            return -1;
+            throw new BusinessException(ErrorCode.DATA_ERROR, "用户名重复");
         }
         return 0;
     }
@@ -177,7 +178,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
 
-
     @Override
     public int userLogout(HttpServletRequest request) {
         // 移除登录态
@@ -185,7 +185,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return 1;
     }
 
+    public static void main(String[] args) {
+        String password = "123456";
+        String passwordStr=new String("123456");
 
+        // 比较
+        System.out.println(password==passwordStr);
+    }
 }
 
 

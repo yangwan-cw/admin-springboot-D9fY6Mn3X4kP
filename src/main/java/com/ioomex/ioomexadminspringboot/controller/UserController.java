@@ -2,6 +2,7 @@ package com.ioomex.ioomexadminspringboot.controller;
 
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.ioomex.ioomexadminspringboot.common.ErrorCode;
 import com.ioomex.ioomexadminspringboot.constant.UserModeConstant;
 import com.ioomex.ioomexadminspringboot.mapper.UserMapper;
 import com.ioomex.ioomexadminspringboot.module.User;
@@ -11,6 +12,7 @@ import com.ioomex.ioomexadminspringboot.module.request.UserRegisterRequest;
 import com.ioomex.ioomexadminspringboot.module.request.UserSearchRequest;
 import com.ioomex.ioomexadminspringboot.service.UserService;
 import com.ioomex.ioomexadminspringboot.service.impl.UserServiceImpl;
+import com.ioomex.ioomexadminspringboot.util.ResultUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -32,37 +34,39 @@ public class UserController {
     private final UserMapper userMapper;
 
     @PostMapping("/register")
-    public Long register(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public Object register(@RequestBody UserRegisterRequest userRegisterRequest) {
         if (ObjectUtils.isEmpty(userRegisterRequest)) {
-            return null;
+            return ResultUtils.fail(ErrorCode.NULL_ERROR);
         }
         String username = userRegisterRequest.getUsername();
         String password = userRegisterRequest.getPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
         if (StringUtils.isAnyEmpty(username, password, checkPassword)) {
-            return null;
+            return ResultUtils.fail(ErrorCode.PARAM_ERROR);
         }
-        return userService.userRegister(userRegisterRequest.getUsername(), userRegisterRequest.getPassword(),
+        long result = userService.userRegister(userRegisterRequest.getUsername(), userRegisterRequest.getPassword(),
           userRegisterRequest.getCheckPassword());
+        return ResultUtils.success(result);
     }
 
 
     @GetMapping("/current")
-    public User current(HttpServletRequest request) {
+    public Object current(HttpServletRequest request) {
         Object userObject = request.getSession().getAttribute(UserModeConstant.USER_LOGIN_STATUS);
         User user = (User) userObject;
         if (user == null) {
-            return null;
+            return ResultUtils.fail(ErrorCode.NULL_ERROR);
         }
         long userId = user.getId();
         User user1 = this.userMapper.selectById(userId);
-        return UserServiceImpl.getSafeUser(user1);
+        User safeUser = UserServiceImpl.getSafeUser(user1);
+        return ResultUtils.success(safeUser);
     }
 
     @PostMapping("/login")
-    public User userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public Object userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         if (ObjectUtils.isEmpty(userLoginRequest)) {
-            return null;
+            return ResultUtils.fail(ErrorCode.NULL_ERROR);
         }
 //        if(true){
 //            return new User();
@@ -70,22 +74,23 @@ public class UserController {
         String username = userLoginRequest.getUsername();
         String password = userLoginRequest.getPassword();
         if (StringUtils.isAnyEmpty(username, password)) {
-            return null;
+            return ResultUtils.fail(ErrorCode.PARAM_ERROR);
         }
-        return userService.doLogin(userLoginRequest.getUsername(), userLoginRequest.getPassword(), request);
+        User user = userService.doLogin(userLoginRequest.getUsername(), userLoginRequest.getPassword(), request);
+        return ResultUtils.success(user);
     }
 
     @PostMapping("/search")
-    public List<User> searchUser(@RequestBody UserSearchRequest userSearchRequest,
-                                 HttpServletRequest request) {
+    public Object searchUser(@RequestBody UserSearchRequest userSearchRequest,
+                             HttpServletRequest request) {
 
         if (isAdmin(request)) {
-            return null;
+            return ResultUtils.fail(ErrorCode.NO_AUTH_ERROR);
         }
 
 
         if (ObjectUtils.isEmpty(userSearchRequest)) {
-            return null;
+            return ResultUtils.fail(ErrorCode.PARAM_ERROR);
         }
         String username = userSearchRequest.getUserName();
         List<User> users = this.userMapper.selectList(new QueryWrapper<User>().lambda().like(ObjectUtils.isNotEmpty(username),
@@ -99,7 +104,7 @@ public class UserController {
                 return user;
             });
         }
-        return users;
+        return ResultUtils.success(users);
     }
 
     private static boolean isAdmin(HttpServletRequest request) {
@@ -113,27 +118,28 @@ public class UserController {
     }
 
     @PostMapping("/delete")
-    public boolean deleteUser(@RequestBody UserDeleteRequest userDeleteRequest, HttpServletRequest request) {
+    public Object deleteUser(@RequestBody UserDeleteRequest userDeleteRequest, HttpServletRequest request) {
         if (isAdmin(request)) {
-            return false;
+            return ResultUtils.fail(ErrorCode.NO_AUTH_ERROR);
         }
 
 
         if (ObjectUtils.isEmpty(userDeleteRequest)) {
-            return false;
+            return ResultUtils.fail(ErrorCode.PARAM_ERROR);
         }
         Integer id = userDeleteRequest.getId();
 
         // 先查询是否存在该用户
         User user = this.userMapper.selectById(id);
         if (user == null) {
-            return false;
+            return ResultUtils.fail(ErrorCode.NULL_ERROR);
         }
 
         if (id != null) {
-            this.userMapper.deleteById(id);
+            int i = this.userMapper.deleteById(id);
+            return ResultUtils.success(i);
         }
-        return false;
+        return ResultUtils.success(false);
     }
 
 
@@ -144,9 +150,9 @@ public class UserController {
      * @return
      */
     @PostMapping("/logout")
-    public int userLogout(HttpServletRequest request) {
+    public Object userLogout(HttpServletRequest request) {
         int result = userService.userLogout(request);
-        return result;
+        return ResultUtils.success(result);
     }
 
 }
